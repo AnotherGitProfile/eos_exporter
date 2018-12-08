@@ -1,0 +1,2 @@
+apiurl: http://localhost:8888
+accounts: [eosio.token, eosio.system]
