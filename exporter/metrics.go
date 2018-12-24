@@ -2,7 +2,6 @@ package exporter
 
 import (
 	"eos_exporter/config"
-	"fmt"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -39,14 +38,11 @@ func AddMetrics(tokens []config.TokenContract) map[string]*prometheus.Desc {
 		"Amount of available ram for given account",
 		[]string{"account"}, nil,
 	)
-	for _, token := range tokens {
-		metricName := fmt.Sprintf("%s_balance", token.Symbol)
-		metrics[token.Symbol] = prometheus.NewDesc(
-			prometheus.BuildFQName("eos", "account", metricName),
-			fmt.Sprintf("Currency %s balance for given account", token.Symbol),
-			[]string{"account", "token"}, nil,
-		)
-	}
+	metrics["CurrencyBalance"] = prometheus.NewDesc(
+		prometheus.BuildFQName("eos", "account", "balance"),
+		"Currency balance for given account",
+		[]string{"account", "token"}, nil,
+	)
 	return metrics
 }
 
@@ -59,7 +55,7 @@ func (e *Exporter) processMetrics(data []*AccountInfo, ch chan<- prometheus.Metr
 		ch <- prometheus.MustNewConstMetric(e.Metrics["RamUsed"], prometheus.GaugeValue, x.RAMUsage, x.AccountName)
 		ch <- prometheus.MustNewConstMetric(e.Metrics["RamQuota"], prometheus.GaugeValue, x.RAMQuota, x.AccountName)
 		for tokenSymbol, balance := range x.CurrencyBalances {
-			ch <- prometheus.MustNewConstMetric(e.Metrics[tokenSymbol], prometheus.GaugeValue, balance, x.AccountName, tokenSymbol)
+			ch <- prometheus.MustNewConstMetric(e.Metrics["CurrencyBalance"], prometheus.GaugeValue, balance, x.AccountName, tokenSymbol)
 		}
 	}
 	return nil
