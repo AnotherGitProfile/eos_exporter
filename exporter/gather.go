@@ -3,6 +3,8 @@ package exporter
 import (
 	"bytes"
 	"encoding/json"
+	"eos_exporter/config"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -11,40 +13,113 @@ import (
 	"github.com/prometheus/common/log"
 )
 
-type Response struct {
+var (
+	errResponseStatusIsNotOK = errors.New("Status code is not equal to 200")
+)
+
+type accountGatherResult struct {
 	accountInfo *AccountInfo
 	err         error
 }
 
-func requestAccountInfos(httpClient http.Client, url string, accounts []string) []*AccountInfo {
-	ch := make(chan *Response)
+type eosRpcClient struct {
+	httpClient  http.Client
+	baseAddress string
+}
+
+type getAccountRequest struct {
+	AccountName string `json:"account_name"`
+}
+
+type getCurrencyBalanceRequest struct {
+	Account string `json:"account"`
+	Code    string `json:"code"`
+	Symbol  string `json:"symbol"`
+}
+
+func parseAsset(asset string) (quantity float64, symbol string) {
+	fmt.Sscanf(asset, "%f %s", &quantity, &symbol)
+	return
+}
+
+func (rpc eosRpcClient) getCurrencyBalance(account, code, symbol string) (balance float64, err error) {
+	url := fmt.Sprintf("%s/v1/chain/get_currency_balance", rpc.baseAddress)
+	req := getCurrencyBalanceRequest{account, code, symbol}
+	body, err := json.Marshal(req)
+	if err != nil {
+		return
+	}
+	resp, err := rpc.httpClient.Post(url, "application/json", bytes.NewBuffer(body))
+	if err != nil {
+		return
+	}
+	if resp.StatusCode != 200 {
+		return 0, errResponseStatusIsNotOK
+	}
+	defer resp.Body.Close()
+	bytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+	assets := []string{}
+	err = json.Unmarshal(bytes, &assets)
+	if err != nil {
+		return
+	}
+	if len(assets) == 0 {
+		return
+	}
+	balance, _ = parseAsset(assets[0])
+	return balance, nil
+}
+
+func (rpc eosRpcClient) getAccountInfo(account string) (info *AccountInfo, err error) {
+	url := fmt.Sprintf("%s/v1/chain/get_account", rpc.baseAddress)
+
+	req := getAccountRequest{account}
+	body, err := json.Marshal(req)
+	if err != nil {
+		return
+	}
+	resp, err := rpc.httpClient.Post(url, "application/json", bytes.NewBuffer(body))
+	if err != nil {
+		return
+	}
+	if resp.StatusCode != 200 {
+		return nil, errResponseStatusIsNotOK
+	}
+	defer resp.Body.Close()
+	bytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+	err = json.Unmarshal(bytes, &info)
+	if err != nil {
+		return
+	}
+	return info, nil
+}
+
+func (rpc eosRpcClient) requestAccountInfos(accounts []string, tokens []config.TokenContract) []*AccountInfo {
+	ch := make(chan *accountGatherResult)
 	jobsDone := 0
 	for _, account := range accounts {
 		go func(acc string) {
-			body := []byte(fmt.Sprintf("{\"account_name\":\"%s\"}", acc))
-			resp, err := httpClient.Post(url, "application/json", bytes.NewBuffer(body))
+			accInfo, err := rpc.getAccountInfo(acc)
 			if err != nil {
-				ch <- &Response{err: fmt.Errorf("Error sending request, Error %s", err)}
+				ch <- &accountGatherResult{err: err}
 				return
 			}
-			if resp.StatusCode != 200 {
-				ch <- &Response{err: fmt.Errorf("Error response status code, Status code is %d", resp.StatusCode)}
-				return
+			accInfo.CurrencyBalances = make(map[string]float64)
+			for _, tok := range tokens {
+				balance, err := rpc.getCurrencyBalance(acc, tok.Account, tok.Symbol)
+				if err != nil {
+					log.Debug(err)
+				}
+				accInfo.CurrencyBalances[tok.Symbol] = balance
 			}
-			defer resp.Body.Close()
-			bytes, err := ioutil.ReadAll(resp.Body)
-			if err != nil {
-				ch <- &Response{err: fmt.Errorf("Error reading response body, Error %s", err)}
-				return
-			}
-			accountInfo := &AccountInfo{}
-			err = json.Unmarshal(bytes, &accountInfo)
-			if err != nil {
-				ch <- &Response{err: fmt.Errorf("Error unmarshalling response body, Error %s", err)}
-				return
-			}
-			ch <- &Response{
-				accountInfo: accountInfo,
+			ch <- &accountGatherResult{
+				accountInfo: accInfo,
 				err:         nil,
 			}
 		}(account)
@@ -73,6 +148,9 @@ func (e *Exporter) gatherAccountData() ([]*AccountInfo, error) {
 	httpClient := http.Client{
 		Timeout: 10 * time.Second,
 	}
-	getAccountURL := fmt.Sprintf("%s/v1/chain/get_account", e.Config.APIURL)
-	return requestAccountInfos(httpClient, getAccountURL, e.Config.Accounts), nil
+	rpc := eosRpcClient{
+		httpClient:  httpClient,
+		baseAddress: e.Config.APIURL,
+	}
+	return rpc.requestAccountInfos(e.Config.Accounts, e.Config.Tokens), nil
 }

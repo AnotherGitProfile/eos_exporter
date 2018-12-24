@@ -21,6 +21,7 @@ type AccountInfo struct {
 		Used float64 `json:"used"`
 		Max  float64 `json:"max"`
 	} `json:"net_limit"`
-	RAMUsage float64 `json:"ram_usage"`
-	RAMQuota float64 `json:"ram_quota"`
+	RAMUsage         float64 `json:"ram_usage"`
+	RAMQuota         float64 `json:"ram_quota"`
+	CurrencyBalances map[string]float64
 }

@@ -1,2 +1,5 @@
 apiurl: http://localhost:8888
-accounts: [eosio.token, eosio.system]
+accounts: [eosio.token]
+tokens:
+  - account: eosio.token
+    symbol: EOS

@@ -17,10 +17,6 @@ var (
 	configFile = flag.String("config.file", "config.yml", "Eos exporter configuration file.")
 )
 
-func init() {
-	mets = exporter.AddMetrics()
-}
-
 func main() {
 	flag.Parse()
 	cfg, err := config.LoadConfig(*configFile)
@@ -28,6 +24,7 @@ func main() {
 		log.Errorf("Error reading config file. Error %s", err)
 		return
 	}
+	mets = exporter.AddMetrics(cfg.Tokens)
 	exporter := exporter.Exporter{
 		Metrics: mets,
 		Config:  *cfg,
