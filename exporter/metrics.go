@@ -48,14 +48,14 @@ func AddMetrics(tokens []config.TokenContract) map[string]*prometheus.Desc {
 
 func (e *Exporter) processMetrics(data []*AccountInfo, ch chan<- prometheus.Metric) error {
 	for _, x := range data {
-		ch <- prometheus.MustNewConstMetric(e.Metrics["CpuUsed"], prometheus.GaugeValue, x.CPULimit.Used, x.AccountName)
-		ch <- prometheus.MustNewConstMetric(e.Metrics["CpuMax"], prometheus.GaugeValue, x.CPULimit.Max, x.AccountName)
-		ch <- prometheus.MustNewConstMetric(e.Metrics["NetUsed"], prometheus.GaugeValue, x.NetLimit.Used, x.AccountName)
-		ch <- prometheus.MustNewConstMetric(e.Metrics["NetMax"], prometheus.GaugeValue, x.NetLimit.Max, x.AccountName)
-		ch <- prometheus.MustNewConstMetric(e.Metrics["RamUsed"], prometheus.GaugeValue, x.RAMUsage, x.AccountName)
-		ch <- prometheus.MustNewConstMetric(e.Metrics["RamQuota"], prometheus.GaugeValue, x.RAMQuota, x.AccountName)
+		ch <- prometheus.MustNewConstMetric(e.Metrics["CpuUsed"], prometheus.GaugeValue, float64(x.CPULimit.Used), x.AccountName)
+		ch <- prometheus.MustNewConstMetric(e.Metrics["CpuMax"], prometheus.GaugeValue, float64(x.CPULimit.Max), x.AccountName)
+		ch <- prometheus.MustNewConstMetric(e.Metrics["NetUsed"], prometheus.GaugeValue, float64(x.NetLimit.Used), x.AccountName)
+		ch <- prometheus.MustNewConstMetric(e.Metrics["NetMax"], prometheus.GaugeValue, float64(x.NetLimit.Max), x.AccountName)
+		ch <- prometheus.MustNewConstMetric(e.Metrics["RamUsed"], prometheus.GaugeValue, float64(x.RAMUsage), x.AccountName)
+		ch <- prometheus.MustNewConstMetric(e.Metrics["RamQuota"], prometheus.GaugeValue, float64(x.RAMQuota), x.AccountName)
 		for tokenSymbol, balance := range x.CurrencyBalances {
-			ch <- prometheus.MustNewConstMetric(e.Metrics["CurrencyBalance"], prometheus.GaugeValue, balance, x.AccountName, tokenSymbol)
+			ch <- prometheus.MustNewConstMetric(e.Metrics["CurrencyBalance"], prometheus.GaugeValue, float64(balance), x.AccountName, tokenSymbol)
 		}
 	}
 	return nil

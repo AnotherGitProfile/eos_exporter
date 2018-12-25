@@ -110,13 +110,13 @@ func (rpc eosRpcClient) requestAccountInfos(accounts []string, tokens []config.T
 				ch <- &accountGatherResult{err: err}
 				return
 			}
-			accInfo.CurrencyBalances = make(map[string]float64)
+			accInfo.CurrencyBalances = make(map[string]Float64)
 			for _, tok := range tokens {
 				balance, err := rpc.getCurrencyBalance(acc, tok.Account, tok.Symbol)
 				if err != nil {
 					log.Debug(err)
 				}
-				accInfo.CurrencyBalances[tok.Symbol] = balance
+				accInfo.CurrencyBalances[tok.Symbol] = Float64(balance)
 			}
 			ch <- &accountGatherResult{
 				accountInfo: accInfo,
