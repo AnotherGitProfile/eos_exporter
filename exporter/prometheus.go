@@ -26,5 +26,5 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 		return
 	}
 
-	log.Infoln("All metrics was successfully gathered")
+	log.Infoln("All metrics were successfully gathered")
 }
