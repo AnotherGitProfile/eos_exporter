@@ -42,7 +42,7 @@ func main() {
 	mets = exporter.AddMetrics(cfg.Tokens)
 	exporter := exporter.Exporter{
 		Metrics: mets,
-		Config:  *cfg,
+		Config:  cfg,
 	}
 	prometheus.MustRegister(&exporter)
 	http.Handle("/metrics", prometheus.Handler())

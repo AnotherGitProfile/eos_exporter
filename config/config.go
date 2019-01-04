@@ -7,16 +7,18 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
-type Config struct {
-	APIURL   string          `yaml:"apiurl"`
-	Accounts []string        `yaml:"accounts,omitempty"`
-	Tokens   []TokenContract `yaml:"tokens,omitempty"`
-}
+type (
+	Config struct {
+		APIURL   string          `yaml:"apiurl"`
+		Accounts []string        `yaml:"accounts,omitempty"`
+		Tokens   []TokenContract `yaml:"tokens,omitempty"`
+	}
 
-type TokenContract struct {
-	Account string `yaml:"account"`
-	Symbol  string `yaml:"symbol"`
-}
+	TokenContract struct {
+		Account string `yaml:"account"`
+		Symbol  string `yaml:"symbol"`
+	}
+)
 
 func LoadConfig(confFile string) (*Config, error) {
 	var c = &Config{}

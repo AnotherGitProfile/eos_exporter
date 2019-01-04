@@ -17,25 +17,27 @@ var (
 	errResponseStatusIsNotOK = errors.New("Status code is not equal to 200")
 )
 
-type accountGatherResult struct {
-	accountInfo *AccountInfo
-	err         error
-}
+type (
+	eosRpcClient struct {
+		httpClient  http.Client
+		baseAddress string
+	}
 
-type eosRpcClient struct {
-	httpClient  http.Client
-	baseAddress string
-}
+	accountGatherResult struct {
+		accountInfo *AccountInfo
+		err         error
+	}
 
-type getAccountRequest struct {
-	AccountName string `json:"account_name"`
-}
+	getAccountRequest struct {
+		AccountName string `json:"account_name"`
+	}
 
-type getCurrencyBalanceRequest struct {
-	Account string `json:"account"`
-	Code    string `json:"code"`
-	Symbol  string `json:"symbol"`
-}
+	getCurrencyBalanceRequest struct {
+		Account string `json:"account"`
+		Code    string `json:"code"`
+		Symbol  string `json:"symbol"`
+	}
+)
 
 func parseAsset(asset string) (quantity float64, symbol string) {
 	fmt.Sscanf(asset, "%f %s", &quantity, &symbol)
