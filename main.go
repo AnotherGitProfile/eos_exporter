@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"net/http"
 
 	"eos_exporter/config"
@@ -13,13 +14,27 @@ import (
 )
 
 var (
-	mets       map[string]*prometheus.Desc
-	configFile = flag.String("config.file", "config.yml", "Eos exporter configuration file.")
+	mets map[string]*prometheus.Desc
+	argv struct {
+		configPath string
+		port       uint
+		help       bool
+	}
 )
 
-func main() {
+func init() {
+	flag.UintVar(&argv.port, "port", 9386, "port to listen")
+	flag.BoolVar(&argv.help, "h", false, "show this help")
+	flag.StringVar(&argv.configPath, "config.file", "config.yml", "path to configuration file")
 	flag.Parse()
-	cfg, err := config.LoadConfig(*configFile)
+}
+
+func main() {
+	if argv.help {
+		flag.Usage()
+		return
+	}
+	cfg, err := config.LoadConfig(argv.configPath)
 	if err != nil {
 		log.Errorf("Error reading config file. Error %s", err)
 		return
@@ -31,6 +46,6 @@ func main() {
 	}
 	prometheus.MustRegister(&exporter)
 	http.Handle("/metrics", prometheus.Handler())
-	log.Info("Beginning to server on port 9386")
-	log.Fatal(http.ListenAndServe(":9386", nil))
+	log.Infof("Beginning to server on port %d", argv.port)
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", argv.port), nil))
 }
