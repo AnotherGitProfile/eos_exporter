@@ -23,7 +23,7 @@ Usage of ./eos_exporter:
     	port to listen (default 9386)
 ```
 
-## Builing and running
+## Building and running
 ```bash
 go mod download
 go build
